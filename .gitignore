@@ -1,9 +1,9 @@
-node_modules
+node_modules/
 artifacts/
 cache/
 coverage/
-dist/
 coverage.json
 typechain-types/
+dist/
 .env
 .DS_Store
