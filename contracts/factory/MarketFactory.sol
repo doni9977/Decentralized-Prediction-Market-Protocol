@@ -4,7 +4,6 @@ pragma solidity ^0.8.24;
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @notice Minimal market shell used until the final Market/AMM contract is integrated.
 contract MinimalPredictionMarket {
     string public question;
     uint256 public closeTime;
@@ -30,8 +29,6 @@ contract MinimalPredictionMarket {
     }
 }
 
-/// @title Prediction market factory
-/// @notice Demonstrates CREATE and CREATE2 deployments for binary prediction markets.
 contract MarketFactory is Ownable {
     uint256 public constant MAX_FEE_BPS = 1_000;
 
@@ -52,7 +49,6 @@ contract MarketFactory is Ownable {
         if (initialOwner == address(0)) revert ZeroAddress();
     }
 
-    /// @notice Deploys a market with CREATE.
     function createMarket(
         string calldata question,
         uint256 closeTime,
@@ -70,7 +66,6 @@ contract MarketFactory is Ownable {
         emit MarketCreated(marketId, market, msg.sender);
     }
 
-    /// @notice Deploys a market with CREATE2 at a deterministic address.
     function createMarketDeterministic(
         string calldata question,
         uint256 closeTime,
@@ -90,7 +85,6 @@ contract MarketFactory is Ownable {
         emit DeterministicMarketCreated(marketId, market, salt);
     }
 
-    /// @notice Predicts the CREATE2 market address for a creator and salt.
     function predictMarketAddress(
         string calldata question,
         uint256 closeTime,

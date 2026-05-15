@@ -5,7 +5,7 @@ describe("UpgradeableFeeVault UUPS", function () {
   async function deployVaultFixture() {
     const [owner, user, recipient, attacker] = await ethers.getSigners();
     const MockERC20 = await ethers.getContractFactory("MockERC20");
-    const asset = await MockERC20.deploy();
+    const asset = await MockERC20.deploy("Mock USD", "mUSD");
     await asset.mint(user.address, ethers.parseEther("1000"));
 
     const VaultV1 = await ethers.getContractFactory("UpgradeableFeeVaultV1");

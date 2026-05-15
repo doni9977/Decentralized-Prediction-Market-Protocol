@@ -20,7 +20,7 @@ async function main() {
   await verify(deployment.TimelockController, [2 * 24 * 60 * 60, [], [], deployment.deployer]);
   await verify(deployment.PredictionGovernor, [deployment.GovernanceToken, deployment.TimelockController]);
   await verify(deployment.MarketFactory, [deployment.TimelockController]);
-  await verify(deployment.FeeAsset, []);
+  await verify(deployment.FeeAsset, ["Mock USD", "mUSD"]);
   await verify(deployment.UpgradeableFeeVaultImplementation, []);
 }
 

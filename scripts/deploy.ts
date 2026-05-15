@@ -34,7 +34,7 @@ async function main() {
   deployment.MarketFactory = await factory.getAddress();
 
   const MockERC20 = await ethers.getContractFactory("MockERC20");
-  const feeAsset = await MockERC20.deploy();
+  const feeAsset = await MockERC20.deploy("Mock USD", "mUSD");
   await feeAsset.waitForDeployment();
   deployment.FeeAsset = await feeAsset.getAddress();
 
