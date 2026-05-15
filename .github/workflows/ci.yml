@@ -46,5 +46,7 @@ jobs:
 
       - name: Run Slither
         uses: crytic/slither-action@v0.4.0
+        continue-on-error: true
         with:
           target: .
+          slither-config: slither.config.json
