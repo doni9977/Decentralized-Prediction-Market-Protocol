@@ -16,7 +16,6 @@ The system implements a decentralized binary prediction market with YES/NO outco
 | The Graph | Intended event indexing for frontend reads. |
 
 ## Quick Start
-
 ```bash
 npm install
 npm run compile
