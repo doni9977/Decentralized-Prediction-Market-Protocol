@@ -1,0 +1,59 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "marketId", "type": "bytes32" },
+      { "indexed": true, "internalType": "address", "name": "provider", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "collateralAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "liquidityMinted", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "yesReserve", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "noReserve", "type": "uint256" }
+    ],
+    "name": "LiquidityAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "marketId", "type": "bytes32" },
+      { "indexed": true, "internalType": "address", "name": "provider", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "collateralAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "liquidityBurned", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "yesReserve", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "noReserve", "type": "uint256" }
+    ],
+    "name": "LiquidityRemoved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "marketId", "type": "bytes32" },
+      { "indexed": true, "internalType": "address", "name": "buyer", "type": "address" },
+      { "indexed": true, "internalType": "uint8", "name": "outcome", "type": "uint8" },
+      { "indexed": false, "internalType": "uint256", "name": "collateralIn", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "sharesOut", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "feeAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "yesReserve", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "noReserve", "type": "uint256" }
+    ],
+    "name": "OutcomePurchased",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": false, "internalType": "uint256", "name": "oldFeeBps", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "newFeeBps", "type": "uint256" }
+    ],
+    "name": "FeeUpdated",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "marketId",
+    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

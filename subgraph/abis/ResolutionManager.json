@@ -1,0 +1,49 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "marketId", "type": "bytes32" },
+      { "indexed": false, "internalType": "uint8", "name": "outcome", "type": "uint8" },
+      { "indexed": false, "internalType": "uint256", "name": "disputeDeadline", "type": "uint256" }
+    ],
+    "name": "MarketResolved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "marketId", "type": "bytes32" },
+      { "indexed": false, "internalType": "uint8", "name": "finalOutcome", "type": "uint8" }
+    ],
+    "name": "ResolutionFinalized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "marketId", "type": "bytes32" },
+      { "indexed": true, "internalType": "address", "name": "disputer", "type": "address" },
+      { "indexed": false, "internalType": "string", "name": "reason", "type": "string" }
+    ],
+    "name": "ResolutionDisputed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "marketId", "type": "bytes32" },
+      { "indexed": false, "internalType": "uint8", "name": "oldOutcome", "type": "uint8" },
+      { "indexed": false, "internalType": "uint8", "name": "newOutcome", "type": "uint8" }
+    ],
+    "name": "ResolutionChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "marketId", "type": "bytes32" }
+    ],
+    "name": "ResolutionCancelled",
+    "type": "event"
+  }
+]

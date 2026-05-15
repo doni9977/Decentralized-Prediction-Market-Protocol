@@ -6,13 +6,21 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "coverage": "hardhat coverage"
+    "coverage": "hardhat coverage",
+    "graph:codegen": "graph codegen subgraph/subgraph.yaml",
+    "graph:build": "graph build subgraph/subgraph.yaml"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.1",
-    "@openzeppelin/contracts-upgradeable": "^5.0.1"
+    "@openzeppelin/contracts-upgradeable": "^5.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "viem": "^2.17.0",
+    "wagmi": "^2.10.9"
   },
   "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.97.1",
+    "@graphprotocol/graph-ts": "^0.35.1",
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.4",
     "@openzeppelin/hardhat-upgrades": "^3.0.3",
