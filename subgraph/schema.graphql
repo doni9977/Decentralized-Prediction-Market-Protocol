@@ -1,0 +1,76 @@
+type Market @entity(immutable: false) {
+  id: ID!
+  question: String!
+  creator: Bytes!
+  closeTime: BigInt!
+  collateralToken: Bytes!
+  oracle: Bytes!
+  feeBps: BigInt!
+  createdAt: BigInt!
+  totalLiquidity: BigInt!
+  yesReserve: BigInt!
+  noReserve: BigInt!
+}
+
+type Trade @entity(immutable: true) {
+  id: ID!
+  market: Market!
+  buyer: Bytes!
+  outcome: Int!
+  collateralIn: BigInt!
+  sharesOut: BigInt!
+  feeAmount: BigInt!
+  timestamp: BigInt!
+}
+
+type Proposal @entity(immutable: false) {
+  id: ID!
+  proposer: Bytes!
+  startBlock: BigInt!
+  endBlock: BigInt!
+  state: Int!
+  description: String!
+}
+
+type Vote @entity(immutable: true) {
+  id: ID!
+  proposal: Proposal!
+  voter: Bytes!
+  support: Int!
+  weight: BigInt!
+  reason: String
+  timestamp: BigInt!
+}
+
+type Resolution @entity(immutable: false) {
+  id: ID!
+  market: Market!
+  outcome: Int!
+  resolvedAt: BigInt!
+  disputed: Boolean!
+}
+
+type Delegation @entity(immutable: true) {
+  id: ID!
+  delegator: Bytes!
+  fromDelegate: Bytes!
+  toDelegate: Bytes!
+  timestamp: BigInt!
+}
+
+type VotingPowerChange @entity(immutable: true) {
+  id: ID!
+  voter: Bytes!
+  previousBalance: BigInt!
+  newBalance: BigInt!
+  timestamp: BigInt!
+}
+
+type LiquidityEvent @entity(immutable: true) {
+  id: ID!
+  market: Market!
+  provider: Bytes!
+  isAdd: Boolean!
+  amount: BigInt!
+  timestamp: BigInt!
+}

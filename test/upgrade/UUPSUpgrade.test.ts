@@ -17,29 +17,41 @@ describe("UpgradeableFeeVault UUPS", function () {
     return { owner, user, recipient, attacker, asset, vault };
   }
 
-  it("initializes and collects fees in V1", async function () {
+  it("initializes and supports ERC4626 deposits in V1", async function () {
     const { user, asset, vault } = await deployVaultFixture();
     const amount = ethers.parseEther("12");
+    const feeAmount = ethers.parseEther("3");
 
-    await asset.connect(user).approve(await vault.getAddress(), amount);
-    await vault.connect(user).collectFee(amount);
+    await asset.connect(user).approve(await vault.getAddress(), amount + feeAmount);
 
-    expect(await vault.totalFeesCollected()).to.equal(amount);
-    expect(await asset.balanceOf(await vault.getAddress())).to.equal(amount);
+    const previewShares = await vault.previewDeposit(amount);
+    await vault.connect(user).deposit(amount, user.address);
+
+    expect(await vault.balanceOf(user.address)).to.equal(previewShares);
+    expect(await vault.totalAssets()).to.equal(amount);
+
+    await vault.connect(user).collectFee(feeAmount);
+    expect(await vault.totalFeesCollected()).to.equal(feeAmount);
+    expect(await vault.totalAssets()).to.equal(amount + feeAmount);
   });
 
   it("upgrades to V2 while preserving storage", async function () {
     const { owner, user, recipient, asset, vault } = await deployVaultFixture();
     const amount = ethers.parseEther("12");
+    const feeAmount = ethers.parseEther("5");
 
-    await asset.connect(user).approve(await vault.getAddress(), amount);
-    await vault.connect(user).collectFee(amount);
+    await asset.connect(user).approve(await vault.getAddress(), amount + feeAmount);
+    const previewShares = await vault.previewDeposit(amount);
+    await vault.connect(user).deposit(amount, user.address);
+    await vault.connect(user).collectFee(feeAmount);
 
     const VaultV2 = await ethers.getContractFactory("UpgradeableFeeVaultV2");
     const upgraded = await upgrades.upgradeProxy(await vault.getAddress(), VaultV2);
 
-    expect(await upgraded.totalFeesCollected()).to.equal(amount);
+    expect(await upgraded.totalFeesCollected()).to.equal(feeAmount);
     expect(await upgraded.asset()).to.equal(await asset.getAddress());
+    expect(await upgraded.totalAssets()).to.equal(amount + feeAmount);
+    expect(await upgraded.balanceOf(user.address)).to.equal(previewShares);
     expect(await upgraded.version()).to.equal("2");
 
     await upgraded.connect(owner).setFeeRecipient(recipient.address);

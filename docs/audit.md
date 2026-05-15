@@ -1,6 +1,7 @@
 # Security Audit
 
 ## Executive Summary
+## Governance Attack Analysis
 
 This document reviews the on-chain prediction market system, including the AMM market flow, ERC-1155 outcome shares, oracle adapter, resolution lifecycle, dispute window, claiming flow, governance assumptions, and fee custody assumptions.
 
@@ -408,3 +409,7 @@ Pending final local run.
 | Reentrancy attempt | `test/resolution/Claiming.test.ts` |
 | Insufficient payout liquidity | `test/resolution/Claiming.test.ts` |
 
+- oracle feed update
+- stale period update
+- resolution override or cancel
+- authorized resolver changes
