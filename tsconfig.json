@@ -1,18 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "target": "es2020",
+    "target": "ES2020",
     "module": "commonjs",
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["node", "mocha"]
   },
-  "include": ["./test", "./hardhat.config.ts"]
-    "outDir": "dist"
-  },
-  "include": ["./scripts", "./test", "./typechain-types", "./hardhat.config.ts"]
+  "include": ["hardhat.config.ts", "scripts", "test", "frontend/src"]
 }
