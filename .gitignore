@@ -4,12 +4,10 @@ cache/
 coverage/
 coverage.json
 typechain-types/
-<<<<<<< HEAD
-.env
-.openzeppelin/
-deployments/*.local.json
-=======
+generated/
+build/
 dist/
 .env
 .DS_Store
->>>>>>> origin/main
+.openzeppelin/
+deployments/*.local.json
