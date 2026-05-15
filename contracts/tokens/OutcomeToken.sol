@@ -24,7 +24,6 @@ contract OutcomeToken is ERC1155, AccessControl {
         _grantRole(BURNER_ROLE, admin);
     }
 
-    /// @notice Mints YES or NO outcome shares for a market.
     function mintOutcome(address to, bytes32 marketId, uint8 outcome, uint256 amount) external {
         if (!hasRole(MINTER_ROLE, msg.sender)) revert NotAuthorizedMinter();
         if (to == address(0)) revert ZeroAddress();
@@ -35,7 +34,6 @@ contract OutcomeToken is ERC1155, AccessControl {
         emit OutcomeMinted(msg.sender, to, marketId, outcome, amount, tokenId);
     }
 
-    /// @notice Burns YES or NO outcome shares from a holder.
     function burnOutcome(address from, bytes32 marketId, uint8 outcome, uint256 amount) external {
         if (!hasRole(BURNER_ROLE, msg.sender)) revert NotAuthorizedBurner();
         if (from == address(0)) revert ZeroAddress();
@@ -46,7 +44,6 @@ contract OutcomeToken is ERC1155, AccessControl {
         emit OutcomeBurned(msg.sender, from, marketId, outcome, amount, tokenId);
     }
 
-    /// @notice Returns deterministic token id for YES or NO shares of a market.
     function outcomeTokenId(bytes32 marketId, uint8 outcome) public pure returns (uint256) {
         if (outcome != 1 && outcome != 2) revert InvalidOutcome();
         return uint256(keccak256(abi.encode(marketId, outcome)));
