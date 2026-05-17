@@ -3,6 +3,8 @@ import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useChainId, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { erc20Abi, governanceTokenAbi, governorAbi, vaultAbi } from "./abis";
 import { governanceAddresses } from "./addresses";
+import { GET_PROPOSALS } from "./queries";
+import { subgraphRequest } from "./subgraph";
 
 const proposalStateLabels = ["Pending", "Active", "Canceled", "Defeated", "Succeeded", "Queued", "Expired", "Executed"];
 
@@ -13,6 +15,13 @@ type ProposalSummary = {
 
 type GovernanceDashboardProps = {
   proposals?: ProposalSummary[];
+};
+
+type ProposalResponse = {
+  proposals: Array<{
+    id: string;
+    description: string;
+  }>;
 };
 
 function friendlyError(error: unknown) {
@@ -30,6 +39,9 @@ export function GovernanceDashboard({ proposals = [] }: GovernanceDashboardProps
   const [delegateInput, setDelegateInput] = useState("");
   const [selectedSupport, setSelectedSupport] = useState<0 | 1 | 2>(1);
   const [depositInput, setDepositInput] = useState("");
+  const [indexedProposals, setIndexedProposals] = useState<ProposalSummary[]>(proposals);
+  const [isSubgraphLoading, setIsSubgraphLoading] = useState(false);
+  const [subgraphError, setSubgraphError] = useState("");
 
   const wrongNetwork = !addresses || addresses.governor === "0x0000000000000000000000000000000000000000";
   const delegatee = useMemo(() => {
@@ -93,6 +105,47 @@ export function GovernanceDashboard({ proposals = [] }: GovernanceDashboardProps
 
   const { data: txHash, error, isPending, writeContract } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProposals() {
+      if (proposals.length > 0) {
+        setIndexedProposals(proposals);
+        return;
+      }
+
+      setIsSubgraphLoading(true);
+      setSubgraphError("");
+
+      try {
+        const data = await subgraphRequest<ProposalResponse>(GET_PROPOSALS, { first: 10 });
+
+        if (!cancelled) {
+          setIndexedProposals(
+            data.proposals.map((proposal) => ({
+              id: BigInt(proposal.id),
+              title: proposal.description || `Proposal ${proposal.id}`
+            }))
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setSubgraphError("Could not load indexed proposals.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsSubgraphLoading(false);
+        }
+      }
+    }
+
+    loadProposals();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [proposals]);
 
   function delegateVotes() {
     if (!addresses || !delegatee) return;
@@ -209,10 +262,12 @@ export function GovernanceDashboard({ proposals = [] }: GovernanceDashboardProps
       </div>
 
       <div className="governance-proposals">
-        {proposals.length === 0 ? (
+        {isSubgraphLoading ? (
+          <p>Loading proposals...</p>
+        ) : indexedProposals.length === 0 ? (
           <p>No indexed proposals yet.</p>
         ) : (
-          proposals.map((proposal) => (
+          indexedProposals.map((proposal) => (
             <ProposalRow
               key={proposal.id.toString()}
               proposal={proposal}
@@ -225,6 +280,7 @@ export function GovernanceDashboard({ proposals = [] }: GovernanceDashboardProps
       </div>
 
       {receipt.isSuccess && <p className="governance-success">Transaction confirmed.</p>}
+      {subgraphError && <p className="governance-error">{subgraphError}</p>}
       {error && <p className="governance-error">{friendlyError(error)}</p>}
     </section>
   );

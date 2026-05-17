@@ -4,9 +4,10 @@ cache/
 coverage/
 coverage.json
 typechain-types/
-.env
-.openzeppelin/
-deployments/*.local.json
+generated/
+build/
 dist/
 .env
 .DS_Store
+.openzeppelin/
+deployments/*.local.json
