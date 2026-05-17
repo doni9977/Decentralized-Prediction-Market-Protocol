@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { GovernanceDashboard } from "./features/governance";
+import { PredictionMarketDashboard } from "./features/market";
 
 type SubgraphProposal = {
   id: string;
@@ -68,8 +69,8 @@ export function App() {
     <main className="app-shell">
       <header className="app-header">
         <div>
-          <h1>Prediction Market Governance</h1>
-          <p>On-chain voting, delegation, and vault interactions.</p>
+          <h1>Prediction Market</h1>
+          <p>Trade outcomes, resolve markets, and manage governance.</p>
         </div>
         <div className="wallet-actions">
           {isConnected ? (
@@ -80,14 +81,22 @@ export function App() {
               </button>
             </>
           ) : (
-            <button type="button" onClick={() => connect({ connector: connectors[0] })} disabled={isPending}>
-              Connect Wallet
-            </button>
+            connectors.map((connector) => (
+              <button
+                key={connector.uid}
+                type="button"
+                onClick={() => connect({ connector })}
+                disabled={isPending}
+              >
+                {connector.name}
+              </button>
+            ))
           )}
         </div>
       </header>
 
       {subgraphError && <p className="banner warning">{subgraphError}</p>}
+      <PredictionMarketDashboard />
       <GovernanceDashboard proposals={proposals} />
     </main>
   );

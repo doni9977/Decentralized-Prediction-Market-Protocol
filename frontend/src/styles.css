@@ -63,13 +63,17 @@ button[disabled] {
   color: #991b1b;
 }
 
+.panel,
 .governance-panel {
   background: #fff;
-  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   padding: 24px;
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.1);
+  margin-bottom: 24px;
 }
 
+.panel-header,
 .governance-header {
   display: flex;
   justify-content: space-between;
@@ -78,10 +82,62 @@ button[disabled] {
   margin-bottom: 24px;
 }
 
+.stat-grid,
 .governance-stats {
   display: grid;
   gap: 8px;
   color: #1e293b;
+}
+
+.market-panel {
+  display: grid;
+  gap: 20px;
+}
+
+.market-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.market-section {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.market-section h3 {
+  margin: 0;
+}
+
+.market-section label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.market-section input {
+  min-width: 0;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+.action-row,
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.segmented button[aria-pressed="true"] {
+  background: #0f172a;
 }
 
 .governance-delegation,
@@ -132,7 +188,26 @@ button[disabled] {
   margin-top: 16px;
 }
 
+.error {
+  color: #b91c1c;
+}
+
 .governance-success {
   color: #166534;
   margin-top: 16px;
+}
+
+.success {
+  color: #166534;
+}
+
+@media (max-width: 760px) {
+  .app-header,
+  .market-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .app-header {
+    display: grid;
+  }
 }
