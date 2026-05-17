@@ -81,4 +81,38 @@ describe("MarketFactory", function () {
       factory.connect(creator).createMarket("Question?", closeTime, collateral.address, oracle.address, 1001)
     ).to.be.revertedWithCustomError(factory, "FeeTooHigh");
   });
+
+  it("records deployed market addresses by emitted market id", async function () {
+    const { factory, creator, collateral, oracle, closeTime } = await deployFactoryFixture();
+
+    const tx = await factory
+      .connect(creator)
+      .createMarket("Will BTC close above 100000 USD?", closeTime, collateral.address, oracle.address, 75);
+    const receipt = await tx.wait();
+    const event = receipt!.logs
+      .map((log) => {
+        try {
+          return factory.interface.parseLog(log);
+        } catch {
+          return null;
+        }
+      })
+      .find((parsed) => parsed?.name === "MarketCreated");
+
+    const marketId = event!.args.marketId;
+    const marketAddress = event!.args.market;
+
+    expect(await factory.markets(marketId)).to.equal(marketAddress);
+  });
+
+  it("rejects zero oracle addresses for deterministic markets", async function () {
+    const { factory, creator, collateral, closeTime } = await deployFactoryFixture();
+    const salt = ethers.id("zero-oracle");
+
+    await expect(
+      factory
+        .connect(creator)
+        .createMarketDeterministic("Question?", closeTime, collateral.address, ethers.ZeroAddress, 100, salt)
+    ).to.be.revertedWithCustomError(factory, "ZeroAddress");
+  });
 });

@@ -67,4 +67,67 @@ describe("UpgradeableFeeVault UUPS", function () {
       "OwnableUnauthorizedAccount"
     );
   });
+
+  it("rejects invalid initialization inputs", async function () {
+    const { owner, asset } = await deployVaultFixture();
+    const VaultV1 = await ethers.getContractFactory("UpgradeableFeeVaultV1");
+
+    await expect(
+      upgrades.deployProxy(VaultV1, [ethers.ZeroAddress, await asset.getAddress()], {
+        kind: "uups",
+        initializer: "initialize"
+      })
+    ).to.be.revertedWithCustomError(VaultV1, "ZeroAddress");
+
+    await expect(
+      upgrades.deployProxy(VaultV1, [owner.address, ethers.ZeroAddress], {
+        kind: "uups",
+        initializer: "initialize"
+      })
+    ).to.be.revertedWithCustomError(VaultV1, "ZeroAddress");
+  });
+
+  it("rejects zero fee collection and invalid withdrawals", async function () {
+    const { owner, user, recipient, attacker, vault } = await deployVaultFixture();
+
+    await expect(vault.connect(user).collectFee(0)).to.be.revertedWithCustomError(vault, "ZeroAmount");
+    await expect(vault.connect(owner).withdrawFees(ethers.ZeroAddress, 1)).to.be.revertedWithCustomError(
+      vault,
+      "ZeroAddress"
+    );
+    await expect(vault.connect(owner).withdrawFees(recipient.address, 0)).to.be.revertedWithCustomError(
+      vault,
+      "ZeroAmount"
+    );
+    await expect(vault.connect(attacker).withdrawFees(recipient.address, 1)).to.be.revertedWithCustomError(
+      vault,
+      "OwnableUnauthorizedAccount"
+    );
+  });
+
+  it("allows owner to withdraw collected fees", async function () {
+    const { owner, user, recipient, asset, vault } = await deployVaultFixture();
+    const feeAmount = ethers.parseEther("9");
+
+    await asset.connect(user).approve(await vault.getAddress(), feeAmount);
+    await vault.connect(user).collectFee(feeAmount);
+
+    await expect(vault.connect(owner).withdrawFees(recipient.address, feeAmount))
+      .to.emit(vault, "FeesWithdrawn")
+      .withArgs(recipient.address, feeAmount);
+
+    expect(await asset.balanceOf(recipient.address)).to.equal(feeAmount);
+  });
+
+  it("rejects invalid V2 fee recipient updates", async function () {
+    const { attacker, vault } = await deployVaultFixture();
+    const VaultV2 = await ethers.getContractFactory("UpgradeableFeeVaultV2");
+    const upgraded = await upgrades.upgradeProxy(await vault.getAddress(), VaultV2);
+
+    await expect(upgraded.setFeeRecipient(ethers.ZeroAddress)).to.be.revertedWithCustomError(upgraded, "ZeroAddress");
+    await expect(upgraded.connect(attacker).setFeeRecipient(attacker.address)).to.be.revertedWithCustomError(
+      upgraded,
+      "OwnableUnauthorizedAccount"
+    );
+  });
 });

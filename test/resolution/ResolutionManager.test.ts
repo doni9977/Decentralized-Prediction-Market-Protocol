@@ -189,4 +189,106 @@ describe("ResolutionManager", function () {
     expect(resolution.cancelled).to.equal(true);
     expect(resolution.outcome).to.equal(3);
   });
+
+  it("rejects invalid constructor inputs", async function () {
+    const { admin, outcomeToken } = await loadFixture(deployFixture);
+    const ResolutionManager = await ethers.getContractFactory("ResolutionManager");
+
+    await expect(ResolutionManager.deploy(ethers.ZeroAddress, 3600, admin.address)).to.be.revertedWithCustomError(
+      ResolutionManager,
+      "ZeroAddress"
+    );
+    await expect(ResolutionManager.deploy(await outcomeToken.getAddress(), 0, admin.address)).to.be.revertedWithCustomError(
+      ResolutionManager,
+      "InvalidDisputeWindow"
+    );
+    await expect(
+      ResolutionManager.deploy(await outcomeToken.getAddress(), 3600, ethers.ZeroAddress)
+    ).to.be.revertedWithCustomError(ResolutionManager, "ZeroAddress");
+  });
+
+  it("rejects duplicate and invalid market registration", async function () {
+    const { manager, marketId, closeTime, collateral, payoutPerShare } = await loadFixture(deployFixture);
+    const secondMarketId = ethers.id("market:eth-10k");
+
+    await expect(
+      manager.registerMarket(marketId, closeTime, await collateral.getAddress(), payoutPerShare)
+    ).to.be.revertedWithCustomError(manager, "MarketAlreadyRegistered");
+
+    await expect(
+      manager.registerMarket(secondMarketId, await time.latest(), await collateral.getAddress(), payoutPerShare)
+    ).to.be.revertedWithCustomError(manager, "InvalidCloseTime");
+
+    await expect(manager.registerMarket(secondMarketId, closeTime, ethers.ZeroAddress, payoutPerShare))
+      .to.be.revertedWithCustomError(manager, "InvalidCollateralToken");
+
+    await expect(manager.registerMarket(secondMarketId, closeTime, await collateral.getAddress(), 0))
+      .to.be.revertedWithCustomError(manager, "InvalidPayoutPerShare");
+  });
+
+  it("rejects deposits for unknown markets and zero deposit amounts", async function () {
+    const { manager, marketId } = await loadFixture(deployFixture);
+
+    await expect(manager.depositCollateral(ethers.id("missing-market"), 1)).to.be.revertedWithCustomError(
+      manager,
+      "MarketNotRegistered"
+    );
+
+    await expect(manager.depositCollateral(marketId, 0)).to.be.revertedWithCustomError(manager, "ZeroAmount");
+  });
+
+  it("rejects invalid resolution outcomes and double resolution", async function () {
+    const { manager, resolver, marketId, closeTime } = await loadFixture(deployFixture);
+    await time.increaseTo(closeTime);
+
+    await expect(manager.connect(resolver).resolveMarket(marketId, 3)).to.be.revertedWithCustomError(
+      manager,
+      "InvalidOutcome"
+    );
+
+    await manager.connect(resolver).resolveMarket(marketId, 1);
+    await expect(manager.connect(resolver).resolveMarket(marketId, 2)).to.be.revertedWithCustomError(
+      manager,
+      "MarketAlreadyResolved"
+    );
+  });
+
+  it("rejects invalid oracle resolution inputs", async function () {
+    const { manager, resolver, marketId, closeTime } = await loadFixture(deployFixture);
+    await time.increaseTo(closeTime);
+
+    await expect(
+      manager.connect(resolver).resolveMarketFromOracle(marketId, ethers.ZeroAddress, 1)
+    ).to.be.revertedWithCustomError(manager, "ZeroAddress");
+
+    await expect(
+      manager.connect(resolver).resolveMarketFromOracle(marketId, resolver.address, 0)
+    ).to.be.revertedWithCustomError(manager, "InvalidThresholdPrice");
+  });
+
+  it("rejects finalization before resolution and after finalization", async function () {
+    const { manager, resolver, marketId, closeTime } = await loadFixture(deployFixture);
+
+    await expect(manager.finalizeResolution(marketId)).to.be.revertedWithCustomError(manager, "MarketNotResolved");
+
+    await time.increaseTo(closeTime);
+    await manager.connect(resolver).resolveMarket(marketId, 2);
+    const resolution = await manager.getResolution(marketId);
+    await time.increaseTo(resolution.disputeDeadline + 1n);
+    await manager.finalizeResolution(marketId);
+
+    await expect(manager.finalizeResolution(marketId)).to.be.revertedWithCustomError(manager, "MarketAlreadyFinalized");
+  });
+
+  it("rejects dispute and resolution changes before resolution or with invalid outcomes", async function () {
+    const { manager, disputer, marketId } = await loadFixture(deployFixture);
+
+    await expect(manager.connect(disputer).startDispute(marketId, "too early")).to.be.revertedWithCustomError(
+      manager,
+      "MarketNotResolved"
+    );
+
+    await expect(manager.changeResolution(marketId, 3)).to.be.revertedWithCustomError(manager, "InvalidOutcome");
+    await expect(manager.changeResolution(marketId, 1)).to.be.revertedWithCustomError(manager, "MarketNotResolved");
+  });
 });

@@ -83,4 +83,29 @@ describe("OracleAdapter", function () {
     await expect(adapter.connect(owner).setStalePeriod(0)).to.be.revertedWithCustomError(adapter, "InvalidStalePeriod");
     await expect(adapter.connect(owner).setFeed(ethers.ZeroAddress)).to.be.revertedWithCustomError(adapter, "InvalidFeed");
   });
+
+  it("rejects invalid constructor inputs", async function () {
+    const { owner, feed } = await loadFixture(deployFixture);
+    const OracleAdapter = await ethers.getContractFactory("OracleAdapter");
+
+    await expect(OracleAdapter.deploy(ethers.ZeroAddress, 3600, owner.address)).to.be.revertedWithCustomError(
+      OracleAdapter,
+      "InvalidFeed"
+    );
+    await expect(OracleAdapter.deploy(await feed.getAddress(), 0, owner.address)).to.be.revertedWithCustomError(
+      OracleAdapter,
+      "InvalidStalePeriod"
+    );
+  });
+
+  it("reads from the replacement feed after an update", async function () {
+    const { adapter, owner } = await loadFixture(deployFixture);
+    const MockV3Aggregator = await ethers.getContractFactory("MockV3Aggregator");
+    const newFeed = await MockV3Aggregator.deploy(8, 3100_00000000n);
+
+    await adapter.connect(owner).setFeed(await newFeed.getAddress());
+
+    const [price] = await adapter.getLatestAnswer();
+    expect(price).to.equal(3100_00000000n);
+  });
 });
