@@ -117,4 +117,105 @@ describe("PredictionMarket", function () {
       .to.emit(market, "FeeUpdated")
       .withArgs(30, 50);
   });
+
+  it("rejects invalid constructor parameters", async function () {
+    const { owner, collateral, outcomeToken, closeTime } = await deployFixture();
+    const Market = await ethers.getContractFactory("PredictionMarket");
+    const marketId = ethers.id("invalid-market");
+
+    await expect(
+      Market.deploy(
+        ethers.ZeroAddress,
+        await outcomeToken.getAddress(),
+        marketId,
+        "Question?",
+        closeTime,
+        30,
+        owner.address
+      )
+    ).to.be.revertedWithCustomError(Market, "InvalidAmount");
+
+    await expect(
+      Market.deploy(
+        await collateral.getAddress(),
+        await outcomeToken.getAddress(),
+        marketId,
+        "",
+        closeTime,
+        30,
+        owner.address
+      )
+    ).to.be.revertedWithCustomError(Market, "InvalidQuestion");
+
+    await expect(
+      Market.deploy(
+        await collateral.getAddress(),
+        await outcomeToken.getAddress(),
+        marketId,
+        "Question?",
+        await time.latest(),
+        30,
+        owner.address
+      )
+    ).to.be.revertedWithCustomError(Market, "InvalidCloseTime");
+
+    await expect(
+      Market.deploy(
+        await collateral.getAddress(),
+        await outcomeToken.getAddress(),
+        marketId,
+        "Question?",
+        closeTime,
+        10_000,
+        owner.address
+      )
+    ).to.be.revertedWithCustomError(Market, "InvalidFee");
+  });
+
+  it("rejects zero liquidity and liquidity after close", async function () {
+    const { lp, market, closeTime } = await deployFixture();
+
+    await expect(market.connect(lp).addLiquidity(0)).to.be.revertedWithCustomError(market, "InvalidAmount");
+
+    await time.increaseTo(closeTime);
+    await expect(market.connect(lp).addLiquidity(ethers.parseEther("1"))).to.be.revertedWithCustomError(
+      market,
+      "MarketClosed"
+    );
+  });
+
+  it("rejects invalid buys and invalid quotes", async function () {
+    const { lp, trader, market } = await deployFixture();
+
+    await expect(market.quoteBuy(3, ethers.parseEther("1"))).to.be.revertedWithCustomError(market, "InvalidOutcome");
+    await expect(market.connect(trader).buyOutcome(3, ethers.parseEther("1"), 1)).to.be.revertedWithCustomError(
+      market,
+      "InvalidOutcome"
+    );
+    await expect(market.connect(trader).buyOutcome(1, 0, 1)).to.be.revertedWithCustomError(market, "InvalidAmount");
+    await expect(market.connect(trader).buyOutcome(1, ethers.parseEther("1"), 1)).to.be.revertedWithCustomError(
+      market,
+      "InsufficientLiquidity"
+    );
+
+    await market.connect(lp).addLiquidity(ethers.parseEther("10"));
+    expect(await market.quoteBuy(2, ethers.parseEther("1"))).to.be.greaterThan(0);
+  });
+
+  it("rejects invalid liquidity removal", async function () {
+    const { lp, trader, market } = await deployFixture();
+    await market.connect(lp).addLiquidity(ethers.parseEther("10"));
+
+    await expect(market.connect(lp).removeLiquidity(0)).to.be.revertedWithCustomError(market, "InvalidAmount");
+    await expect(market.connect(trader).removeLiquidity(1)).to.be.revertedWithCustomError(
+      market,
+      "InsufficientLiquidity"
+    );
+  });
+
+  it("rejects invalid fee updates", async function () {
+    const { owner, market } = await deployFixture();
+
+    await expect(market.connect(owner).setFeeBps(10_000)).to.be.revertedWithCustomError(market, "InvalidFee");
+  });
 });
