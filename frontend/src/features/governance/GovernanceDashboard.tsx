@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { formatEther, isAddress } from "viem";
+import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useChainId, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { governanceTokenAbi, governorAbi } from "./abis";
+import { erc20Abi, governanceTokenAbi, governorAbi, vaultAbi } from "./abis";
 import { governanceAddresses } from "./addresses";
 
 const proposalStateLabels = ["Pending", "Active", "Canceled", "Defeated", "Succeeded", "Queued", "Expired", "Executed"];
@@ -29,6 +29,7 @@ export function GovernanceDashboard({ proposals = [] }: GovernanceDashboardProps
   const addresses = governanceAddresses[chainId];
   const [delegateInput, setDelegateInput] = useState("");
   const [selectedSupport, setSelectedSupport] = useState<0 | 1 | 2>(1);
+  const [depositInput, setDepositInput] = useState("");
 
   const wrongNetwork = !addresses || addresses.governor === "0x0000000000000000000000000000000000000000";
   const delegatee = useMemo(() => {
@@ -42,6 +43,36 @@ export function GovernanceDashboard({ proposals = [] }: GovernanceDashboardProps
     functionName: "balanceOf",
     args: address ? [address] : undefined,
     query: { enabled: Boolean(address && !wrongNetwork) }
+  });
+
+  const vaultAssets = useReadContract({
+    address: addresses?.feeVault,
+    abi: vaultAbi,
+    functionName: "totalAssets",
+    query: { enabled: Boolean(addresses?.feeVault && !wrongNetwork) }
+  });
+
+  const vaultShares = useReadContract({
+    address: addresses?.feeVault,
+    abi: vaultAbi,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    query: { enabled: Boolean(address && !wrongNetwork) }
+  });
+
+  const assetDecimals = useReadContract({
+    address: addresses?.feeAsset,
+    abi: erc20Abi,
+    functionName: "decimals",
+    query: { enabled: Boolean(addresses?.feeAsset && !wrongNetwork) }
+  });
+
+  const assetAllowance = useReadContract({
+    address: addresses?.feeAsset,
+    abi: erc20Abi,
+    functionName: "allowance",
+    args: address && addresses?.feeVault ? [address, addresses.feeVault] : undefined,
+    query: { enabled: Boolean(address && addresses?.feeVault && !wrongNetwork) }
   });
 
   const votingPower = useReadContract({
@@ -83,6 +114,32 @@ export function GovernanceDashboard({ proposals = [] }: GovernanceDashboardProps
     });
   }
 
+  function approveVault() {
+    if (!addresses || !depositInput) return;
+    const decimals = assetDecimals.data ?? 18;
+    const amount = parseUnits(depositInput, decimals);
+
+    writeContract({
+      address: addresses.feeAsset,
+      abi: erc20Abi,
+      functionName: "approve",
+      args: [addresses.feeVault, amount]
+    });
+  }
+
+  function depositToVault() {
+    if (!addresses || !depositInput || !address) return;
+    const decimals = assetDecimals.data ?? 18;
+    const amount = parseUnits(depositInput, decimals);
+
+    writeContract({
+      address: addresses.feeVault,
+      abi: vaultAbi,
+      functionName: "deposit",
+      args: [amount, address]
+    });
+  }
+
   if (!isConnected) {
     return <section className="governance-panel">Connect wallet to view DAO governance.</section>;
   }
@@ -99,8 +156,10 @@ export function GovernanceDashboard({ proposals = [] }: GovernanceDashboardProps
           <p>{address}</p>
         </div>
         <div className="governance-stats">
-          <span>Balance {formatEther(balance.data ?? 0n)} PGOV</span>
-          <span>Votes {formatEther(votingPower.data ?? 0n)}</span>
+          <span>Balance {formatUnits(balance.data ?? 0n, 18)} PGOV</span>
+          <span>Votes {formatUnits(votingPower.data ?? 0n, 18)}</span>
+          <span>Vault assets {formatUnits(vaultAssets.data ?? 0n, assetDecimals.data ?? 18)}</span>
+          <span>Vault shares {formatUnits(vaultShares.data ?? 0n, 18)}</span>
         </div>
       </header>
 
@@ -128,6 +187,25 @@ export function GovernanceDashboard({ proposals = [] }: GovernanceDashboardProps
         <button type="button" onClick={() => setSelectedSupport(2)} aria-pressed={selectedSupport === 2}>
           Abstain
         </button>
+      </div>
+
+      <div className="governance-vault">
+        <label htmlFor="deposit">Vault deposit (fee asset)</label>
+        <input
+          id="deposit"
+          value={depositInput}
+          onChange={(event) => setDepositInput(event.target.value)}
+          placeholder="0.0"
+        />
+        <div className="governance-vault-actions">
+          <button type="button" onClick={approveVault} disabled={isPending || !depositInput}>
+            Approve
+          </button>
+          <button type="button" onClick={depositToVault} disabled={isPending || !depositInput}>
+            Deposit
+          </button>
+        </div>
+        <span>Allowance {formatUnits(assetAllowance.data ?? 0n, assetDecimals.data ?? 18)}</span>
       </div>
 
       <div className="governance-proposals">
