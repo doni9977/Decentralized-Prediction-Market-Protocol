@@ -1,11 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
-import { formatUnits, isAddress, parseUnits } from "viem";
+import { formatUnits, isAddress, keccak256, parseUnits, stringToBytes } from "viem";
 import { useAccount, useChainId, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { erc20MarketAbi, marketFactoryAbi, predictionMarketAbi, resolutionManagerAbi } from "./abis";
 import { marketAddresses } from "./addresses";
 
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const yesNoLabels: Record<number, string> = { 1: "YES", 2: "NO", 3: "Cancelled" };
+const resolverRole = keccak256(stringToBytes("RESOLVER_ROLE"));
+const deploymentFileByChain: Record<number, string> = {
+  31337: "localhost",
+  84532: "baseSepolia",
+  421614: "arbitrumSepolia"
+};
+
+type DeploymentFile = {
+  MarketFactory?: string;
+  CollateralToken?: string;
+  PredictionMarket?: string;
+  ResolutionManager?: string;
+  OracleAdapter?: string;
+  SampleMarketId?: string;
+};
 
 function asAddress(value: string | undefined): `0x${string}` | undefined {
   return value && isAddress(value) ? value : undefined;
@@ -67,6 +82,36 @@ export function PredictionMarketDashboard() {
     if (configured.resolutionManager !== zeroAddress) setResolutionAddressInput(configured.resolutionManager);
     if (configured.oracleAdapter !== zeroAddress) setOracleAddressInput(configured.oracleAdapter);
   }, [configured]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const deploymentName = deploymentFileByChain[chainId];
+    if (!deploymentName) return;
+
+    async function loadDeployment() {
+      try {
+        const response = await fetch(`/deployments/${deploymentName}.json`, { cache: "no-store" });
+        if (!response.ok) return;
+        const deployment = (await response.json()) as DeploymentFile;
+        if (cancelled) return;
+
+        if (deployment.MarketFactory && isAddress(deployment.MarketFactory)) setFactoryAddress(deployment.MarketFactory);
+        if (deployment.CollateralToken && isAddress(deployment.CollateralToken)) setCollateralAddressInput(deployment.CollateralToken);
+        if (deployment.PredictionMarket && isAddress(deployment.PredictionMarket)) setMarketAddressInput(deployment.PredictionMarket);
+        if (deployment.ResolutionManager && isAddress(deployment.ResolutionManager)) setResolutionAddressInput(deployment.ResolutionManager);
+        if (deployment.OracleAdapter && isAddress(deployment.OracleAdapter)) setOracleAddressInput(deployment.OracleAdapter);
+        if (deployment.SampleMarketId && asBytes32(deployment.SampleMarketId)) setMarketIdInput(deployment.SampleMarketId);
+      } catch {
+        // Static fallback addresses stay active when no deployment file is published.
+      }
+    }
+
+    loadDeployment();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chainId]);
 
   const factory = asAddress(factoryAddress);
   const market = asAddress(marketAddressInput);
@@ -179,6 +224,21 @@ export function PredictionMarketDashboard() {
     args: marketId ? [marketId] : undefined,
     query: { enabled: Boolean(resolutionManager && marketId) }
   });
+  const hasResolverRole = useReadContract({
+    address: resolutionManager,
+    abi: resolutionManagerAbi,
+    functionName: "hasRole",
+    args: address ? [resolverRole, address] : undefined,
+    query: { enabled: Boolean(resolutionManager && address) }
+  });
+
+  const isResolved = Boolean(resolution.data?.resolved);
+  const isFinalized = Boolean(resolution.data?.finalized);
+  const isCancelled = Boolean(resolution.data?.cancelled);
+  const canResolve = Boolean(hasResolverRole.data && resolutionManager && marketId && !isResolved);
+  const canDispute = Boolean(resolutionManager && marketId && isResolved && !isFinalized);
+  const canFinalize = Boolean(resolutionManager && marketId && isResolved && !isFinalized);
+  const canClaim = Boolean(resolutionManager && marketId && isFinalized && !isCancelled);
 
   function createMarket() {
     if (!factory || !collateral || !oracleAdapter || !question || !closeTime || !feeBps) return;
@@ -416,22 +476,23 @@ export function PredictionMarketDashboard() {
             <button type="button" onClick={depositPayoutCollateral} disabled={isPending || !resolutionManager || !marketId}>
               Fund Payout
             </button>
-            <button type="button" onClick={resolveManual} disabled={isPending || !resolutionManager || !marketId}>
+            <button type="button" onClick={resolveManual} disabled={isPending || !canResolve}>
               Resolve
             </button>
-            <button type="button" onClick={resolveFromOracle} disabled={isPending || !resolutionManager || !oracleAdapter || !marketId}>
+            <button type="button" onClick={resolveFromOracle} disabled={isPending || !canResolve || !oracleAdapter}>
               Resolve Oracle
             </button>
-            <button type="button" onClick={startDispute} disabled={isPending || !resolutionManager || !marketId}>
+            <button type="button" onClick={startDispute} disabled={isPending || !canDispute}>
               Dispute
             </button>
-            <button type="button" onClick={finalizeResolution} disabled={isPending || !resolutionManager || !marketId}>
+            <button type="button" onClick={finalizeResolution} disabled={isPending || !canFinalize}>
               Finalize
             </button>
-            <button type="button" onClick={claimPayout} disabled={isPending || !resolutionManager || !marketId}>
+            <button type="button" onClick={claimPayout} disabled={isPending || !canClaim}>
               Claim
             </button>
           </div>
+          {!hasResolverRole.data && <p className="hint">Resolver actions require RESOLVER_ROLE.</p>}
         </div>
       </div>
 

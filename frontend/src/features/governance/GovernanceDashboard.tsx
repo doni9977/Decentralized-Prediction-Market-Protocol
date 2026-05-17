@@ -7,6 +7,11 @@ import { GET_PROPOSALS } from "./queries";
 import { subgraphRequest } from "./subgraph";
 
 const proposalStateLabels = ["Pending", "Active", "Canceled", "Defeated", "Succeeded", "Queued", "Expired", "Executed"];
+const deploymentFileByChain: Record<number, string> = {
+  31337: "localhost",
+  84532: "baseSepolia",
+  421614: "arbitrumSepolia"
+};
 
 type ProposalSummary = {
   id: bigint;
@@ -24,6 +29,13 @@ type ProposalResponse = {
   }>;
 };
 
+type DeploymentFile = {
+  GovernanceToken?: `0x${string}`;
+  PredictionGovernor?: `0x${string}`;
+  FeeAsset?: `0x${string}`;
+  UpgradeableFeeVaultProxy?: `0x${string}`;
+};
+
 function friendlyError(error: unknown) {
   if (!error) return "";
   const message = error instanceof Error ? error.message : String(error);
@@ -35,13 +47,54 @@ function friendlyError(error: unknown) {
 export function GovernanceDashboard({ proposals = [] }: GovernanceDashboardProps) {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const addresses = governanceAddresses[chainId];
+  const [deploymentAddresses, setDeploymentAddresses] = useState(governanceAddresses[chainId]);
+  const addresses = deploymentAddresses;
   const [delegateInput, setDelegateInput] = useState("");
   const [selectedSupport, setSelectedSupport] = useState<0 | 1 | 2>(1);
   const [depositInput, setDepositInput] = useState("");
   const [indexedProposals, setIndexedProposals] = useState<ProposalSummary[]>(proposals);
   const [isSubgraphLoading, setIsSubgraphLoading] = useState(false);
   const [subgraphError, setSubgraphError] = useState("");
+
+  useEffect(() => {
+    setDeploymentAddresses(governanceAddresses[chainId]);
+    const deploymentName = deploymentFileByChain[chainId];
+    if (!deploymentName) return;
+
+    let cancelled = false;
+
+    async function loadDeployment() {
+      try {
+        const response = await fetch(`/deployments/${deploymentName}.json`, { cache: "no-store" });
+        if (!response.ok) return;
+        const deployment = (await response.json()) as DeploymentFile;
+        if (cancelled) return;
+
+        if (
+          deployment.GovernanceToken &&
+          deployment.PredictionGovernor &&
+          deployment.FeeAsset &&
+          deployment.UpgradeableFeeVaultProxy
+        ) {
+          setDeploymentAddresses({
+            chainId,
+            governanceToken: deployment.GovernanceToken,
+            governor: deployment.PredictionGovernor,
+            feeAsset: deployment.FeeAsset,
+            feeVault: deployment.UpgradeableFeeVaultProxy
+          });
+        }
+      } catch {
+        // Static fallback addresses stay active when no deployment file is published.
+      }
+    }
+
+    loadDeployment();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chainId]);
 
   const wrongNetwork = !addresses || addresses.governor === "0x0000000000000000000000000000000000000000";
   const delegatee = useMemo(() => {

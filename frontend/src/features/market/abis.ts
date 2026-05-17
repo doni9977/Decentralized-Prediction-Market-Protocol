@@ -100,6 +100,16 @@ export const predictionMarketAbi = [
 export const resolutionManagerAbi = [
   {
     type: "function",
+    name: "hasRole",
+    stateMutability: "view",
+    inputs: [
+      { name: "role", type: "bytes32" },
+      { name: "account", type: "address" }
+    ],
+    outputs: [{ type: "bool" }]
+  },
+  {
+    type: "function",
     name: "getResolution",
     stateMutability: "view",
     inputs: [{ name: "marketId", type: "bytes32" }],

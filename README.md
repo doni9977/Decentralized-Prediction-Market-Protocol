@@ -48,37 +48,49 @@ Recommended deployment order:
 
 ### Base Sepolia
 
-Deployment links will be added after final deployment.
+Use the deployment script to deploy and verify all contracts on Base Sepolia:
+
+```bash
+npx hardhat run scripts/deploy.ts --network baseSepolia
+npx hardhat run scripts/postDeployCheck.ts --network baseSepolia
+npx hardhat run scripts/verify.ts --network baseSepolia
+```
 
 | Contract | Address / Link |
 |---|---|
-| GovernanceToken | TBD |
-| PredictionGovernor | TBD |
-| Timelock | TBD |
-| OutcomeToken | TBD |
-| OracleAdapter | TBD |
-| ResolutionManager | TBD |
-| MarketFactory | TBD |
-| PredictionMarket | TBD |
+| GovernanceToken | TBD (BaseScan link) |
+| PredictionGovernor | TBD (BaseScan link) |
+| Timelock | TBD (BaseScan link) |
+| OutcomeToken | TBD (BaseScan link) |
+| OracleAdapter | TBD (BaseScan link) |
+| ResolutionManager | TBD (BaseScan link) |
+| MarketFactory | TBD (BaseScan link) |
+| PredictionMarket | TBD (BaseScan link) |
 
 ### Arbitrum Sepolia
 
-Deployment links will be added after final deployment.
+Use the deployment script to deploy and verify all contracts on Arbitrum Sepolia:
+
+```bash
+npx hardhat run scripts/deploy.ts --network arbitrumSepolia
+npx hardhat run scripts/postDeployCheck.ts --network arbitrumSepolia
+npx hardhat run scripts/verify.ts --network arbitrumSepolia
+```
 
 | Contract | Address / Link |
 |---|---|
-| GovernanceToken | TBD |
-| PredictionGovernor | TBD |
-| Timelock | TBD |
-| OutcomeToken | TBD |
-| OracleAdapter | TBD |
-| ResolutionManager | TBD |
-| MarketFactory | TBD |
-| PredictionMarket | TBD |
+| GovernanceToken | TBD (Arbiscan link) |
+| PredictionGovernor | TBD (Arbiscan link) |
+| Timelock | TBD (Arbiscan link) |
+| OutcomeToken | TBD (Arbiscan link) |
+| OracleAdapter | TBD (Arbiscan link) |
+| ResolutionManager | TBD (Arbiscan link) |
+| MarketFactory | TBD (Arbiscan link) |
+| PredictionMarket | TBD (Arbiscan link) |
 
 ## Verified Contracts
 
-Explorer verification links will be added after deployment:
+Explorer verification links (paste after `scripts/verify.ts` succeeds):
 
 - BaseScan: TBD
 - Arbiscan: TBD
