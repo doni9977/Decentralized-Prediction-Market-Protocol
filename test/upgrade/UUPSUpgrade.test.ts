@@ -30,9 +30,12 @@ describe("UpgradeableFeeVault UUPS", function () {
     expect(await vault.balanceOf(user.address)).to.equal(previewShares);
     expect(await vault.totalAssets()).to.equal(amount);
 
-    await vault.connect(user).collectFee(feeAmount);
+    await expect(vault.connect(user).collectFee(feeAmount))
+      .to.emit(vault, "FeeCollected")
+      .withArgs(user.address, feeAmount);
     expect(await vault.totalFeesCollected()).to.equal(feeAmount);
     expect(await vault.totalAssets()).to.equal(amount + feeAmount);
+    expect(await vault.decimals()).to.equal(await asset.decimals());
   });
 
   it("upgrades to V2 while preserving storage", async function () {
@@ -85,6 +88,13 @@ describe("UpgradeableFeeVault UUPS", function () {
         initializer: "initialize"
       })
     ).to.be.revertedWithCustomError(VaultV1, "ZeroAddress");
+
+    const implementation = await VaultV1.deploy();
+    await implementation.initialize(owner.address, await asset.getAddress());
+    await expect(implementation.initialize(owner.address, await asset.getAddress())).to.be.revertedWithCustomError(
+      implementation,
+      "InvalidInitialization"
+    );
   });
 
   it("rejects zero fee collection and invalid withdrawals", async function () {
@@ -117,6 +127,20 @@ describe("UpgradeableFeeVault UUPS", function () {
       .withArgs(recipient.address, feeAmount);
 
     expect(await asset.balanceOf(recipient.address)).to.equal(feeAmount);
+  });
+
+  it("allows owner to withdraw ERC4626 vault liquidity", async function () {
+    const { user, asset, vault } = await deployVaultFixture();
+    const amount = ethers.parseEther("7");
+
+    await asset.connect(user).approve(await vault.getAddress(), amount);
+    await vault.connect(user).deposit(amount, user.address);
+
+    const shares = await vault.balanceOf(user.address);
+    await vault.connect(user).withdraw(amount, user.address, user.address);
+
+    expect(await vault.balanceOf(user.address)).to.be.lessThan(shares);
+    expect(await asset.balanceOf(user.address)).to.equal(ethers.parseEther("1000"));
   });
 
   it("rejects invalid V2 fee recipient updates", async function () {

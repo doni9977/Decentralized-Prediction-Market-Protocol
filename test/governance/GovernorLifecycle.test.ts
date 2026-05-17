@@ -58,6 +58,7 @@ describe("PredictionGovernor lifecycle", function () {
     expect(await governor.votingPeriod()).to.equal(VOTING_PERIOD_BLOCKS);
     expect(await governor["quorumNumerator()"]()).to.equal(4n);
     expect(await governor.proposalThreshold()).to.equal((await token.totalSupply()) / 100n);
+    expect(await governor.supportsInterface("0x01ffc9a7")).to.equal(true);
   });
 
   it("allows account above threshold to create proposal", async function () {
@@ -102,6 +103,7 @@ describe("PredictionGovernor lifecycle", function () {
 
     await mine(Number(VOTING_PERIOD_BLOCKS + 1n));
     expect(await governor.state(proposalId)).to.equal(4n);
+    expect(await governor.proposalNeedsQueuing(proposalId)).to.equal(true);
 
     await expect(governor.queue(targets, values, calldatas, descriptionHash)).to.emit(governor, "ProposalQueued");
     expect(await governor.state(proposalId)).to.equal(5n);
@@ -113,5 +115,28 @@ describe("PredictionGovernor lifecycle", function () {
 
     expect(await controlled.value()).to.equal(42n);
     expect(await governor.state(proposalId)).to.equal(7n);
+  });
+
+  it("allows proposer to cancel a pending proposal", async function () {
+    const { governor, proposer, targets, values, calldatas, description } = await createValueProposal(13n);
+    const descriptionHash = ethers.id(description);
+
+    const tx = await governor.connect(proposer).propose(targets, values, calldatas, description);
+    const receipt = await tx.wait();
+    const event = receipt!.logs
+      .map((log) => {
+        try {
+          return governor.interface.parseLog(log);
+        } catch {
+          return null;
+        }
+      })
+      .find((parsed) => parsed?.name === "ProposalCreated");
+    const proposalId = event!.args.proposalId;
+
+    await expect(governor.connect(proposer).cancel(targets, values, calldatas, descriptionHash))
+      .to.emit(governor, "ProposalCanceled")
+      .withArgs(proposalId);
+    expect(await governor.state(proposalId)).to.equal(2n);
   });
 });

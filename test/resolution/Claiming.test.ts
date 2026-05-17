@@ -140,4 +140,41 @@ describe("Claiming", function () {
 
     await expect(attacker.attack(marketId, amount)).to.be.reverted;
   });
+
+  it("reentrant claimant can claim normally when callback attack is disabled", async function () {
+    const [admin, funder, recipient] = await ethers.getSigners();
+    const OutcomeToken = await ethers.getContractFactory("OutcomeToken");
+    const outcomeToken = await OutcomeToken.deploy("ipfs://outcomes/{id}.json", admin.address);
+    const ResolutionManager = await ethers.getContractFactory("ResolutionManager");
+    const manager = await ResolutionManager.deploy(await outcomeToken.getAddress(), 3600, admin.address);
+    await outcomeToken.grantRole(await outcomeToken.BURNER_ROLE(), await manager.getAddress());
+
+    const MockReentrantERC20 = await ethers.getContractFactory("MockReentrantERC20");
+    const collateral = await MockReentrantERC20.deploy();
+    const ReentrantClaimant = await ethers.getContractFactory("ReentrantClaimant");
+    const claimant = await ReentrantClaimant.deploy(await manager.getAddress());
+
+    const marketId = ethers.id("market:normal-contract-claim");
+    const closeTime = (await time.latest()) + 100;
+    const amount = ethers.parseEther("10");
+    await manager.registerMarket(marketId, closeTime, await collateral.getAddress(), ethers.parseEther("1"));
+    await outcomeToken.mintOutcome(await claimant.getAddress(), marketId, 1, amount);
+    await collateral.mint(funder.address, ethers.parseEther("100"));
+    await collateral.connect(funder).approve(await manager.getAddress(), ethers.parseEther("100"));
+    await manager.connect(funder).depositCollateral(marketId, ethers.parseEther("100"));
+
+    await time.increaseTo(closeTime);
+    await manager.resolveMarket(marketId, 1);
+    const resolution = await manager.getResolution(marketId);
+    await time.increaseTo(resolution.disputeDeadline + 1n);
+    await manager.finalizeResolution(marketId);
+
+    expect(await claimant.supportsInterface("0x4e2312e0")).to.equal(true);
+    expect(await claimant.onERC1155BatchReceived(admin.address, admin.address, [], [], "0x")).to.equal("0xbc197c81");
+
+    await claimant.attack(marketId, amount);
+    await claimant.sweep(collateral, recipient.address);
+
+    expect(await collateral.balanceOf(recipient.address)).to.equal(amount);
+  });
 });
