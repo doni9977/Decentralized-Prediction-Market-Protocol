@@ -71,6 +71,8 @@ dataSources:
         - name: ResolutionManager
           file: ./abis/ResolutionManager.json
       eventHandlers:
+        - event: MarketRegistered(indexed bytes32,uint256,indexed address,uint256)
+          handler: handleMarketRegistered
         - event: MarketResolved(indexed bytes32,uint8,uint256)
           handler: handleMarketResolved
         - event: ResolutionFinalized(indexed bytes32,uint8)
@@ -81,6 +83,8 @@ dataSources:
           handler: handleResolutionChanged
         - event: ResolutionCancelled(indexed bytes32)
           handler: handleResolutionCancelled
+        - event: PayoutClaimed(indexed bytes32,indexed address,uint8,uint256,uint256)
+          handler: handlePayoutClaimed
       file: ./src/resolution.ts
   - kind: ethereum/contract
     name: PredictionGovernor
@@ -104,6 +108,8 @@ dataSources:
           handler: handleProposalCreated
         - event: VoteCast(indexed address,uint256,uint8,uint256,string)
           handler: handleVoteCast
+        - event: ProposalQueued(uint256,uint256)
+          handler: handleProposalQueued
         - event: ProposalExecuted(uint256)
           handler: handleProposalExecuted
       file: ./src/governance.ts

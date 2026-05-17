@@ -37,9 +37,18 @@ export function loadOrCreateResolution(id: Bytes, timestamp: BigInt): Resolution
   if (resolution == null) {
     resolution = new Resolution(entityId);
     resolution.market = entityId;
+    resolution.closeTime = BigInt.zero();
+    resolution.collateralToken = Address.zero();
+    resolution.payoutPerShare = BigInt.zero();
     resolution.outcome = 0;
-    resolution.resolvedAt = timestamp;
+    resolution.resolvedAt = BigInt.zero();
+    resolution.disputeDeadline = BigInt.zero();
+    resolution.resolved = false;
     resolution.disputed = false;
+    resolution.finalized = false;
+    resolution.cancelled = false;
+    resolution.claimedShares = BigInt.zero();
+    resolution.claimedPayout = BigInt.zero();
   }
 
   return resolution;

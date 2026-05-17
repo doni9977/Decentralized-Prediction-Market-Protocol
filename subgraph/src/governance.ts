@@ -1,7 +1,8 @@
 import {
   ProposalCreated,
-  VoteCast,
-  ProposalExecuted
+  ProposalExecuted,
+  ProposalQueued,
+  VoteCast
 } from "../../generated/PredictionGovernor/PredictionGovernor";
 import {
   DelegateChanged,
@@ -20,6 +21,16 @@ export function handleProposalCreated(event: ProposalCreated): void {
   proposal.save();
 }
 
+export function handleProposalQueued(event: ProposalQueued): void {
+  let proposal = Proposal.load(event.params.proposalId.toHexString());
+  if (proposal != null) {
+    proposal.state = 5; // Queued
+    proposal.queuedAt = event.block.timestamp;
+    proposal.etaSeconds = event.params.etaSeconds;
+    proposal.save();
+  }
+}
+
 export function handleVoteCast(event: VoteCast): void {
   let vote = new Vote(eventId(event));
   vote.proposal = event.params.proposalId.toHexString();
@@ -34,7 +45,8 @@ export function handleVoteCast(event: VoteCast): void {
 export function handleProposalExecuted(event: ProposalExecuted): void {
   let proposal = Proposal.load(event.params.proposalId.toHexString());
   if (proposal != null) {
-    proposal.state = 4; // Executed state
+    proposal.state = 7; // Executed
+    proposal.executedAt = event.block.timestamp;
     proposal.save();
   }
 }

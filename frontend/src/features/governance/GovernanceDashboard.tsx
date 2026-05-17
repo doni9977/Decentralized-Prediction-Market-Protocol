@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useChainId, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { erc20Abi, governanceTokenAbi, governorAbi, vaultAbi } from "./abis";
