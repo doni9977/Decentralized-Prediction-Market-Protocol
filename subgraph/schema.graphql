@@ -30,6 +30,9 @@ type Proposal @entity(immutable: false) {
   endBlock: BigInt!
   state: Int!
   description: String!
+  queuedAt: BigInt
+  etaSeconds: BigInt
+  executedAt: BigInt
 }
 
 type Vote @entity(immutable: true) {
@@ -45,9 +48,18 @@ type Vote @entity(immutable: true) {
 type Resolution @entity(immutable: false) {
   id: ID!
   market: Market!
+  closeTime: BigInt!
+  collateralToken: Bytes!
+  payoutPerShare: BigInt!
   outcome: Int!
   resolvedAt: BigInt!
+  disputeDeadline: BigInt!
+  resolved: Boolean!
   disputed: Boolean!
+  finalized: Boolean!
+  cancelled: Boolean!
+  claimedShares: BigInt!
+  claimedPayout: BigInt!
 }
 
 type Delegation @entity(immutable: true) {
